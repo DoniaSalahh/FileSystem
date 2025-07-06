@@ -3,15 +3,23 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import EmployeeLayout from "../components/Layout";
-import { FaSpinner, FaFolder, FaFolderOpen, FaFileAlt, FaDownload, FaEye } from "react-icons/fa";
+import { FaSpinner, FaFolder, FaFolderOpen, FaFileAlt, FaDownload } from "react-icons/fa";
 
 export default function AuthorizedFilesPage() {
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState({});
-  const token = localStorage.getItem("token");
+  const [token, setToken] = useState(null); // ❗️ Add state for token
 
   useEffect(() => {
+    // ✅ Run only on client
+    const storedToken = localStorage.getItem("token");
+    setToken(storedToken);
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+
     const fetchAuthorizedFiles = async () => {
       try {
         const response = await axios.get(
@@ -22,7 +30,7 @@ export default function AuthorizedFilesPage() {
             },
           }
         );
-        
+
         console.log("Response data:", response.data);
         setFolders(response.data.folders || []);
       } catch (error) {
@@ -33,17 +41,13 @@ export default function AuthorizedFilesPage() {
     };
 
     fetchAuthorizedFiles();
-  }, [token]);
+  }, [token]); // ⚠️ Only run when token is available
 
   const toggleFolder = (folderId) => {
     setExpandedFolders(prev => ({
       ...prev,
       [folderId]: !prev[folderId]
     }));
-  };
-
-  const formatFileType = (mimetype) => {
-    return mimetype.split("/")[1] || mimetype;
   };
 
   return (
@@ -96,9 +100,6 @@ export default function AuthorizedFilesPage() {
                                 <div className="flex items-center">
                                   <FaFileAlt className="text-gray-500 mr-3" />
                                   <span className="text-gray-700">{file.originalName}</span>
-                                  {/* <span className="ml-3 text-xs text-gray-500">
-                                    ({formatFileType(file.mimetype)})
-                                  </span> */}
                                 </div>
                                 <div className="space-x-2">
                                   <a
@@ -110,7 +111,6 @@ export default function AuthorizedFilesPage() {
                                   >
                                     <FaDownload className="mr-1" /> Download
                                   </a>
-                                  
                                 </div>
                               </div>
                             ))}
