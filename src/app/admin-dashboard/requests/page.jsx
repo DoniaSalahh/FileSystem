@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FiCheck, FiX, FiEye, FiUserPlus, FiTrash2 } from "react-icons/fi";
+import { FiCheck, FiX, FiEye, FiUserPlus, FiInbox } from "react-icons/fi";
 import Swal from "sweetalert2";
 import AdminLayout from "../components/AdminLayout";
 import axios from "axios";
@@ -9,14 +9,13 @@ import axios from "axios";
 export default function RequestsPage() {
   const [employees, setEmployees] = useState([]);
   const [folders, setFolders] = useState([]);
-  const [allFolders, setAllFolders] = useState([]);
   const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isGiveAccessModalOpen, setIsGiveAccessModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [accessData, setAccessData] = useState({
-    folderId: "",
+    fileId: "",
     employeeId: "",
     reason: "",
   });
@@ -34,14 +33,14 @@ export default function RequestsPage() {
         }
       );
       setEmployees(response.data.employees);
-      // console.log("Fetched employees:", response.data.employees);
     } catch (error) {
       console.error("Error fetching employees:", error);
       Swal.fire("Error!", "Failed to load employees.", "error");
     }
   };
 
-  const fetchAllFolders = async () => {
+  // Fetch folders from API
+  const fetchFolders = async () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
@@ -52,16 +51,15 @@ export default function RequestsPage() {
           },
         }
       );
-      setAllFolders(response.data.folders);
-      // console.log("Fetched all folders:", response.data.folders);
+      setFolders(response.data.folders);
     } catch (error) {
-      console.error("Error fetching all folders:", error);
-      Swal.fire("Error!", "Failed to load folders and files.", "error");
+      console.error("Error fetching folders:", error);
+      Swal.fire("Error!", "Failed to load folders.", "error");
     }
   };
 
-  // Fetch folders and their requests from API
-  const fetchFoldersWithRequests = async () => {
+  // Fetch requests from API and flatten the structure
+  const fetchRequests = async () => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token");
@@ -73,37 +71,31 @@ export default function RequestsPage() {
           },
         }
       );
-
-      const foldersData = response.data?.folders || [];
-
-      setFolders(foldersData);
-      // console.log("Fetched folders:", foldersData);
-
-      // Extract all access requests from all folders
-      const allRequests = foldersData.flatMap((folder) =>
-        (folder.accessRequests || []).map((request) => ({
+      
+      // Transform the data to flatten the structure
+      const flattenedRequests = response.data.folders.flatMap(folder => {
+        return folder.accessRequests.map(request => ({
           ...request,
           folderId: folder.id,
           folderName: folder.name,
-          requestId: request.requestId,
-        }))
-      );
-      // console.log("Extracted requests:", allRequests);
-
-      setRequests(allRequests);
+          id: request.requestId // Using requestId as the main id
+        }));
+      });
+      
+      setRequests(flattenedRequests);
+      
     } catch (error) {
-      console.error("Error fetching folders:", error);
-      Swal.fire("Error!", "Failed to load folders and requests.", "error");
-      setRequests([]);
+      console.error("Error fetching requests:", error);
+      Swal.fire("Error!", "Failed to load requests.", "error");
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchFoldersWithRequests();
+    fetchRequests();
     fetchEmployees();
-    fetchAllFolders();
+    fetchFolders();
   }, []);
 
   // Open view modal
@@ -127,7 +119,7 @@ export default function RequestsPage() {
   const closeGiveAccessModal = () => {
     setIsGiveAccessModalOpen(false);
     setAccessData({
-      folderId: "",
+      fileId: "",
       employeeId: "",
       reason: "",
     });
@@ -140,44 +132,6 @@ export default function RequestsPage() {
       ...prev,
       [name]: value,
     }));
-  };
-
-  // Delete request
-  const deleteRequest = async (requestId) => {
-    Swal.fire({
-      title: "Delete Request?",
-      text: "Are you sure you want to delete this request?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, delete it!",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const token = localStorage.getItem("token");
-          await axios.delete(
-            `https://file-system-black.vercel.app/access/access-requests/${requestId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          setRequests(requests.filter((request) => request.requestId !== requestId));
-
-          Swal.fire("Deleted!", "Request has been deleted.", "success");
-        } catch (error) {
-          console.error("Error deleting request:", error);
-          Swal.fire(
-            "Error!",
-            error.response?.data?.message || "Failed to delete request.",
-            "error"
-          );
-        }
-      }
-    });
   };
 
   // Accept request
@@ -205,22 +159,11 @@ export default function RequestsPage() {
             }
           );
 
-          setRequests(
-            requests.map((request) =>
-              request.requestId === requestId
-                ? { ...request, status: "approved" }
-                : request
-            )
-          );
-
+          await fetchRequests();
           Swal.fire("Accepted!", "Request has been accepted.", "success");
         } catch (error) {
           console.error("Error accepting request:", error);
-          Swal.fire(
-            "Error!",
-            error.response?.data?.message || "Failed to accept request.",
-            "error"
-          );
+          Swal.fire("Error!", "Failed to accept request.", "error");
         }
       }
     });
@@ -228,7 +171,6 @@ export default function RequestsPage() {
 
   // Reject request
   const rejectRequest = async (requestId) => {
-    // console.log("Rejecting request with ID:", requestId);
     Swal.fire({
       title: "Reject Request?",
       text: "Are you sure you want to reject this request?",
@@ -252,22 +194,11 @@ export default function RequestsPage() {
             }
           );
 
-          setRequests(
-            requests.map((request) =>
-              request.requestId === requestId
-                ? { ...request, status: "rejected" }
-                : request
-            )
-          );
-
+          await fetchRequests();
           Swal.fire("Rejected!", "Request has been rejected.", "success");
         } catch (error) {
           console.error("Error rejecting request:", error);
-          Swal.fire(
-            "Error!",
-            error.response?.data?.message || "Failed to reject request.",
-            "error"
-          );
+          Swal.fire("Error!", "Failed to reject request.", "error");
         }
       }
     });
@@ -275,64 +206,44 @@ export default function RequestsPage() {
 
   // Give access to employee
   const giveAccessToEmployee = async () => {
-  try {
-    // Validate inputs
-    if (!accessData.folderId || !accessData.employeeId || !accessData.reason) {
+    if (!accessData.fileId || !accessData.employeeId || !accessData.reason) {
       Swal.fire("Error!", "Please fill in all fields.", "error");
       return;
     }
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      Swal.fire("Error!", "Authentication token not found.", "error");
-      return;
-    }
+    try {
+      const token = localStorage.getItem("token");
 
-    // console.log("Submitting access data:", accessData); // Debug log
-
-    const response = await axios.post(
-      "https://file-system-black.vercel.app/access/GiveAccess",
-      {
-        folderId: accessData.folderId,
-        employeeId: accessData.employeeId,
-        reason: accessData.reason
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
+      let response = await axios.post(
+        "https://file-system-black.vercel.app/access/GiveAccess",
+        accessData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      }
-    );
+      );
 
-    // console.log("API Response:", response.data); // Debug log
-
-    if (response.data && response.data.msg === "Folder access granted to employee") {
-      await fetchFoldersWithRequests(); // Refresh the requests list
+      await fetchRequests();
       closeGiveAccessModal();
       Swal.fire("Success!", "Access has been granted.", "success");
-    } else {
-      throw new Error("Unexpected response from server");
+
+    } catch (error) {
+      if (error.response.data.msg === "Invalid employeeId or folderId format") {
+        Swal.fire({
+          icon: "error",
+          title: "Invalid Input",
+          text: "Please ensure the instructor and folder IDs are valid.",
+        });
+        return;
+      }
+      Swal.fire("Error!", "Failed to grant access.", "error");
     }
-  } catch (error) {
-    console.error("Error giving access:", error);
-    
-    let errorMessage = "Failed to grant access";
-    if (error.response) {
-      // Server responded with a status code outside 2xx
-      errorMessage = error.response.data?.message || error.response.statusText;
-    } else if (error.request) {
-      // Request was made but no response received
-      errorMessage = "No response from server";
-    }
-    
-    Swal.fire("Error!", errorMessage, "error");
-  }
-};
+  };
 
   return (
     <AdminLayout>
-      <div className="p-4">
+      <div className=" p-4 ">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <div>
@@ -355,15 +266,6 @@ export default function RequestsPage() {
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-          ) : requests.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <h3 className="text-lg font-medium text-gray-900">
-                No requests found
-              </h3>
-              <p className="mt-2 text-sm text-gray-600">
-                There are currently no access requests to display.
-              </p>
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -392,77 +294,90 @@ export default function RequestsPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {requests.map((request) => (
-                      <motion.tr
-                        key={request.requestId}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="hover:bg-gray-50"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {request.folderName}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
-                          {request.employee?.username || 'Unknown'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              request.status === "pending"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : request.status === "approved"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {request.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {request.reason}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(request.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => openViewModal(request)}
-                              className="text-blue-600 hover:text-blue-800"
-                              title="View Details"
-                            >
-                              <FiEye className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => deleteRequest(request.requestId)}
-                              className="text-red-600 hover:text-red-800"
-                              title="Delete Request"
-                            >
-                              <FiTrash2 className="h-4 w-4" />
-                            </button>
-
-                            {request.status === "pending" && (
-                              <>
-                                <button
-                                  onClick={() => acceptRequest(request.requestId)}
-                                  className="text-green-600 hover:text-green-800"
-                                  title="Accept Request"
-                                >
-                                  <FiCheck className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => rejectRequest(request.requestId)}
-                                  className="text-red-600 hover:text-red-800"
-                                  title="Reject Request"
-                                >
-                                  <FiX className="h-4 w-4" />
-                                </button>
-                              </>
-                            )}
+                    {!requests || requests.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan="6"
+                          className="px-6 py-4 text-center text-sm text-gray-500"
+                        >
+                          <div className="flex flex-col items-center justify-center space-y-2">
+                            <FiInbox className="h-12 w-12 text-gray-400" />
+                            <p>No requests found</p>
+                            <p className="text-xs text-gray-500">
+                              There are currently no requests to display
+                            </p>
                           </div>
                         </td>
-                      </motion.tr>
-                    ))}
+                      </tr>
+                    ) : (
+                      requests.map((request) => (
+                        <motion.tr
+                          key={request.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="hover:bg-gray-50"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {request.folderName || "No folder"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
+                            {request.employee?.username || 
+                             request.employee?.email || 
+                             "No instructor"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <span
+                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                request.status === "pending"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : request.status === "approved"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {request.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {request.reason || "No reason provided"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {request.createdAt
+                              ? new Date(request.createdAt).toLocaleDateString()
+                              : "No date"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => openViewModal(request)}
+                                className="text-blue-600 hover:text-blue-800"
+                                title="View Details"
+                              >
+                                <FiEye className="h-4 w-4" />
+                              </button>
+                              {request.status === "pending" && (
+                                <>
+                                  <button
+                                    onClick={() => acceptRequest(request.id)}
+                                    className="text-green-600 hover:text-green-800"
+                                    title="Accept Request"
+                                  >
+                                    <FiCheck className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => rejectRequest(request.id)}
+                                    className="text-red-600 hover:text-red-800"
+                                    title="Reject Request"
+                                  >
+                                    <FiX className="h-4 w-4" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </motion.tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -498,9 +413,9 @@ export default function RequestsPage() {
                       Instructor
                     </label>
                     <p className="mt-1 text-sm text-gray-900">
-                      {selectedRequest.employee
-                        ? `${selectedRequest.employee.username} (${selectedRequest.employee.email})`
-                        : "--"}
+                      {selectedRequest.employee?.username || 
+                       selectedRequest.employee?.email || 
+                       "--"}
                     </p>
                   </div>
                   <div>
@@ -549,7 +464,7 @@ export default function RequestsPage() {
                     <>
                       <button
                         onClick={() => {
-                          acceptRequest(selectedRequest.requestId);
+                          acceptRequest(selectedRequest.id);
                           closeViewModal();
                         }}
                         className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
@@ -559,7 +474,7 @@ export default function RequestsPage() {
                       </button>
                       <button
                         onClick={() => {
-                          rejectRequest(selectedRequest.requestId);
+                          rejectRequest(selectedRequest.id);
                           closeViewModal();
                         }}
                         className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
@@ -576,7 +491,7 @@ export default function RequestsPage() {
 
           {/* Give Access Modal */}
           {isGiveAccessModalOpen && (
-            <div className="fixed inset-0 bg-Wadi bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="fixed inset-0 bg-Wadi bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
               <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
                 <div className="flex justify-between items-center border-b px-6 py-4">
                   <h3 className="text-lg font-medium text-gray-900">
@@ -599,12 +514,15 @@ export default function RequestsPage() {
                       value={accessData.employeeId}
                       onChange={handleAccessInputChange}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
                     >
                       <option value="">Select Instructor</option>
                       {employees.map((employee) => (
-                        <option key={employee.id} value={employee._id}>
-                          {employee.username || employee.email || employee._id}
+                        <option key={employee._id} value={employee._id}>
+                          {employee.firstName && employee.lastName
+                            ? `${employee.firstName} ${employee.lastName}`
+                            : employee.username
+                            ? employee.username
+                            : employee._id}
                         </option>
                       ))}
                     </select>
@@ -614,19 +532,13 @@ export default function RequestsPage() {
                       Folder
                     </label>
                     <select
-                      name="folderId"
-                      value={accessData.folderId}
-                      onChange={(e) => {
-                        setAccessData({
-                          ...accessData,
-                          folderId: e.target.value,
-                        });
-                      }}
+                      name="fileId"
+                      value={accessData.fileId}
+                      onChange={handleAccessInputChange}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
                     >
                       <option value="">Select Folder</option>
-                      {allFolders.map((folder) => (
+                      {folders.map((folder) => (
                         <option key={folder._id} value={folder._id}>
                           {folder.name}
                         </option>
@@ -641,10 +553,9 @@ export default function RequestsPage() {
                       name="reason"
                       value={accessData.reason}
                       onChange={handleAccessInputChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full border resize-none border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Enter reason for access"
                       rows={3}
-                      required
                     />
                   </div>
                 </div>

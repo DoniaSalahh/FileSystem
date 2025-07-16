@@ -13,6 +13,8 @@ import {
 import Swal from "sweetalert2";
 import AdminLayout from "../components/AdminLayout";
 import axios from "axios";
+import React from "react";
+
 
 export default function FilesManagementPage() {
   const [folders, setFolders] = useState([]);
@@ -25,6 +27,8 @@ export default function FilesManagementPage() {
   const [selectedFolderId, setSelectedFolderId] = useState("");
   const [selectedSubfolderName, setSelectedSubfolderName] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
+
+
 
   // Fetch folders from API
   const fetchFolders = async () => {
@@ -152,7 +156,7 @@ export default function FilesManagementPage() {
       const formData = new FormData();
       formData.append("files[]", selectedFile);
 
-      await axios.post(
+      const response = await axios.post(
         `https://file-system-black.vercel.app/file/${selectedFolderId}/${selectedSubfolderName}/upload`,
         formData,
         {
@@ -162,13 +166,23 @@ export default function FilesManagementPage() {
           },
         }
       );
-
+      console.log("File upload response:", response.data);
+      if (response.data.message === "Error") {
+        Swal.fire({
+          icon: "error",
+          title: response.data.message,
+          text: response.data.err,
+        });
+        return;
+      }
       await fetchFolders();
-      setIsUploadFileModalOpen(false);
       setSelectedFile(null);
       setSelectedFolderId("");
       setSelectedSubfolderName("");
       Swal.fire("Success!", "File uploaded successfully.", "success");
+      setIsUploadFileModalOpen(false);
+
+
     } catch (error) {
       console.error("Error uploading file:", error);
       Swal.fire("Error!", "Failed to upload file.", "error");
@@ -276,7 +290,12 @@ export default function FilesManagementPage() {
 
   // Handle file selection
   const handleFileChange = (e) => {
+        const file = e.target.files[0];
+    if (file) {
     setSelectedFile(e.target.files[0]);
+    } else {
+      setSelectedFile("No file chosen");
+    }
   };
 
   return (
@@ -391,7 +410,8 @@ export default function FilesManagementPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {folders.map((folder) => (
-                      <>
+                      
+                      <React.Fragment key={folder._id}>
                         {/* Folder row */}
                         <motion.tr
                           key={folder._id}
@@ -502,7 +522,7 @@ export default function FilesManagementPage() {
                             ))}
                           </>
                         ))}
-                      </>
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>

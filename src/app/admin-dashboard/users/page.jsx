@@ -244,13 +244,13 @@ const EmployeeDashboard = () => {
     const user = await getUserById(userId);
     if (user) {
       setEditedUser({
-        fistName: user.fistName || "",
-        lastName: user.lastName || "",
-        email: user.email || "",
-        phone: user.phone || "",
+        // fistName: user.fistName || "",
+        // lastName: user.lastName || "",
+        // email: user.email || "",
+        // phone: user.phone || "",
         prn: user.prn || "",
         rating: user.rating || "",
-        note: user.note || "",
+        // note: user.note || "",
       });
       setIsEditModalOpen(true);
     }
@@ -286,21 +286,21 @@ const EmployeeDashboard = () => {
 
   // Save edited user
   const saveEditedUser = async () => {
-    if (!editedUser.fistName.trim()) {
-      Swal.fire("Error!", "First name is required.", "error");
-      return;
-    }
+    // if (!editedUser.fistName.trim()) {
+    //   Swal.fire("Error!", "First name is required.", "error");
+    //   return;
+    // }
 
-    if (!editedUser.email.trim()) {
-      Swal.fire("Error!", "Email is required.", "error");
-      return;
-    }
+    // if (!editedUser.email.trim()) {
+    //   Swal.fire("Error!", "Email is required.", "error");
+    //   return;
+    // }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(editedUser.email)) {
-      Swal.fire("Error!", "Please enter a valid email address.", "error");
-      return;
-    }
+    // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // if (!emailRegex.test(editedUser.email)) {
+    //   Swal.fire("Error!", "Please enter a valid email address.", "error");
+    //   return;
+    // }
 
     setIsUpdating(true);
     const token = localStorage.getItem("token");
@@ -308,10 +308,10 @@ const EmployeeDashboard = () => {
      let res= await axios.put(
         `https://file-system-black.vercel.app/user/employee/${currentUserId}`,
         {
-          fistName: editedUser.fistName,
-          lastName: editedUser.lastName,
-          email: editedUser.email,
-          phone: editedUser.phone,
+          // fistName: editedUser.fistName,
+          // lastName: editedUser.lastName,
+          // email: editedUser.email,
+          // phone: editedUser.phone,
           prn: editedUser.prn,
           rating: editedUser.rating,
 
@@ -547,7 +547,7 @@ const EmployeeDashboard = () => {
           {/* Edit User Modal */}
           {isEditModalOpen && (
             <div className="fixed inset-0 bg-Wadi bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-lg shadow-xl w-full max-w-md min-h-full mt-20">
+              <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-full my-20">
                 <div className="flex justify-between items-center border-b px-6 py-4">
                   <h3 className="text-lg font-medium text-gray-900">
                     Edit User
@@ -560,7 +560,7 @@ const EmployeeDashboard = () => {
                   </button>
                 </div>
                 <div className="p-6 space-y-4">
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700">
                       First Name*
                     </label>
@@ -609,7 +609,7 @@ const EmployeeDashboard = () => {
                       onChange={handleEditUserChange}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     />
-                  </div>
+                  </div> */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
                       PRN
@@ -770,14 +770,14 @@ const EmployeeDashboard = () => {
                     Notes for {users.find(u => u._id === currentUserId)?.fistName || "User"}
                   </h3>
                   <div className="flex space-x-2">
-                    {notes.length === 0 && (
+                    {/* {notes.length === 0 && (
                       <button
                         onClick={() => openNoteModal(currentUserId)}
                         className="px-3 py-1 bg-blue-500 text-white rounded-md text-sm flex items-center"
                       >
                         <FiPlus className="mr-1" /> Add Note
                       </button>
-                    )}
+                    )} */}
                     <button
                       onClick={closeNotesList}
                       className="text-gray-500 hover:text-gray-700"
@@ -890,7 +890,7 @@ const EmployeeDashboard = () => {
                           content: e.target.value,
                         })
                       }
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block resize-none w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       rows="4"
                       required
                     />

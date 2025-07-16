@@ -7,20 +7,28 @@ import Swal from "sweetalert2";
 import { FaSpinner, FaCheck, FaClock } from "react-icons/fa";
 
 export default function PublicFilesPage() {
+  // const [files, setFiles] = useState([]);
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const token = localStorage.getItem("token");
+    const [token, setToken] = useState("");
 
   useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      setToken(storedToken);
+    }
     fetchFolders();
+
   }, []);
+
 
   const fetchFolders = async () => {
     try {
+      const token = localStorage.getItem("token");
       const response = await axios.get(
         "https://file-system-black.vercel.app/file/getAllFolders",
         {
@@ -29,6 +37,7 @@ export default function PublicFilesPage() {
           },
         }
       );
+      console.log("Response data:", response.data);
 
       const savedRequests = JSON.parse(localStorage.getItem("folderRequests") || "{}");
 
@@ -230,7 +239,7 @@ export default function PublicFilesPage() {
                 <textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  className="w-full p-2 border rounded"
+                  className="w-full resize-none p-2 border rounded"
                   placeholder="Please explain why you need access..."
                   rows={4}
                   required

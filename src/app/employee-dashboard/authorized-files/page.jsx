@@ -3,23 +3,29 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import EmployeeLayout from "../components/Layout";
-import { FaSpinner, FaFolder, FaFolderOpen, FaFileAlt, FaDownload } from "react-icons/fa";
+import {
+  FaSpinner,
+  FaFolder,
+  FaFolderOpen,
+  FaFileAlt,
+  FaDownload,
+  FaEye,
+} from "react-icons/fa";
 
 export default function AuthorizedFilesPage() {
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState({});
-  const [token, setToken] = useState(null); // ❗️ Add state for token
+  const [token, setToken] = useState("");
 
   useEffect(() => {
-    // ✅ Run only on client
     const storedToken = localStorage.getItem("token");
-    setToken(storedToken);
+    if (storedToken) {
+      setToken(storedToken);
+    }
   }, []);
 
   useEffect(() => {
-    if (!token) return;
-
     const fetchAuthorizedFiles = async () => {
       try {
         const response = await axios.get(
@@ -41,13 +47,17 @@ export default function AuthorizedFilesPage() {
     };
 
     fetchAuthorizedFiles();
-  }, [token]); // ⚠️ Only run when token is available
+  }, [token]);
 
   const toggleFolder = (folderId) => {
-    setExpandedFolders(prev => ({
+    setExpandedFolders((prev) => ({
       ...prev,
-      [folderId]: !prev[folderId]
+      [folderId]: !prev[folderId],
     }));
+  };
+
+  const formatFileType = (mimetype) => {
+    return mimetype.split("/")[1] || mimetype;
   };
 
   return (
@@ -68,17 +78,23 @@ export default function AuthorizedFilesPage() {
         ) : (
           <div className="space-y-4">
             {folders.map((folder) => (
-              <div key={folder.id} className="border rounded-lg overflow-hidden">
-                <div 
+              <div
+                key={folder.id}
+                className="border rounded-lg overflow-hidden"
+              >
+                <div
                   className="flex items-center justify-between p-4 bg-gray-50 cursor-pointer"
                   onClick={() => toggleFolder(folder.id)}
                 >
                   <div className="flex items-center">
-                    {expandedFolders[folder.id] ? 
-                      <FaFolderOpen className="text-Royal-Green mr-3" /> : 
+                    {expandedFolders[folder.id] ? (
+                      <FaFolderOpen className="text-Royal-Green mr-3" />
+                    ) : (
                       <FaFolder className="text-Royal-Green mr-3" />
-                    }
-                    <span className="font-semibold text-gray-800">{folder.name}</span>
+                    )}
+                    <span className="font-semibold text-gray-800">
+                      {folder.name}
+                    </span>
                   </div>
                   <span className="text-gray-500">
                     {folder.subfolders?.length || 0} subfolders
@@ -88,18 +104,29 @@ export default function AuthorizedFilesPage() {
                 {expandedFolders[folder.id] && (
                   <div className="p-4 space-y-4">
                     {folder.subfolders?.map((subfolder) => (
-                      <div key={subfolder._id} className="ml-6 border-l-2 border-gray-200 pl-4">
+                      <div
+                        key={subfolder._id}
+                        className="ml-6 border-l-2 border-gray-200 pl-4"
+                      >
                         <div className="font-medium text-gray-700 mb-2">
                           {subfolder.name}
                         </div>
-                        
+
                         {subfolder.files?.length > 0 ? (
                           <div className="space-y-2">
                             {subfolder.files.map((file) => (
-                              <div key={file._id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+                              <div
+                                key={file._id}
+                                className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
+                              >
                                 <div className="flex items-center">
                                   <FaFileAlt className="text-gray-500 mr-3" />
-                                  <span className="text-gray-700">{file.originalName}</span>
+                                  <span className="text-gray-700">
+                                    {file.originalName}
+                                  </span>
+                                  {/* <span className="ml-3 text-xs text-gray-500">
+                                    ({formatFileType(file.mimetype)})
+                                  </span> */}
                                 </div>
                                 <div className="space-x-2">
                                   <a
@@ -116,7 +143,9 @@ export default function AuthorizedFilesPage() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-gray-500 text-sm ml-4">No files in this subfolder</p>
+                          <p className="text-gray-500 text-sm ml-4">
+                            No files in this subfolder
+                          </p>
                         )}
                       </div>
                     ))}

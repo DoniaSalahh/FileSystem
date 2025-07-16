@@ -14,29 +14,17 @@ export default function EmployeeHome() {
   const [loading, setLoading] = useState(true);
   const [notesLoading, setNotesLoading] = useState(true);
   const [error, setError] = useState(null);
-  const token = localStorage.getItem("token");
 
- useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedToken = localStorage.getItem("token");
-      setToken(storedToken);
-    }
-  }, []);
-
-  // ✅ بعد ما التوكن يتحدد، fetch البيانات
   useEffect(() => {
-    if (!token) return;
-
+    const token=localStorage.getItem("token")
     const fetchData = async () => {
       try {
-        const coursesResponse = await fetch(
-          "https://file-system-black.vercel.app/links/get-employee-links",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        // Fetch courses
+        const coursesResponse = await fetch("https://file-system-black.vercel.app/links/get-employee-links", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (!coursesResponse.ok) {
           throw new Error("Failed to fetch courses");
@@ -44,7 +32,10 @@ export default function EmployeeHome() {
 
         const coursesData = await coursesResponse.json();
         setCourses(coursesData.links);
+        console.log("Courses Data:", coursesData.links);
+        
 
+        // Fetch employee profile to get employee ID
         const profileResponse = await axios.get(
           "https://file-system-black.vercel.app/user/employee-Profile",
           {
@@ -55,6 +46,8 @@ export default function EmployeeHome() {
         );
 
         const employeeId = profileResponse.data.employee._id;
+        
+        // Fetch notes using employee ID
         await getEmployeeNotes(employeeId);
       } catch (err) {
         setError(err.message);
@@ -65,10 +58,11 @@ export default function EmployeeHome() {
     };
 
     fetchData();
-  }, [token]);
+  }, []);
 
   const getEmployeeNotes = async (employeeId) => {
     try {
+      const token = localStorage.getItem("token");
       const response = await axios.get(
         `https://file-system-black.vercel.app/notes/employee-notes/${employeeId}`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -162,11 +156,11 @@ export default function EmployeeHome() {
                     <Image
                       src={
                         course.image?.secure_url ||
-                        "/default-course-image.jpg" 
+                        "/default-course-image.jpg"
                       }
                       alt={course.title}
-                      layout="fill"
-                      objectFit="cover"
+                      fill
+                      style={{ objectFit: "cover" }}
                       className="w-full h-full"
                       unoptimized
                     />

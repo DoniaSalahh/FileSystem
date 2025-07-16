@@ -1,16 +1,17 @@
 "use client";
 
 import { FaEnvelope, FaUserCircle, FaPhone, FaSpinner } from "react-icons/fa";
-import Image from "next/image";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 export default function TeamInfo() {
   const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const token = localStorage.getItem("token");
 
   useEffect(() => {
+  const token = localStorage.getItem("token");
+
     const fetchTeamMembers = async () => {
       try {
         const response = await fetch(
@@ -74,17 +75,19 @@ export default function TeamInfo() {
             className="flex items-start gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm"
           >
             <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200">
-              <Image
-                src={member.photo}
-                alt={`${member.firstName || member.username}'s profile`}
-                width={50}
-                height={50}
-                className="w-full h-full object-cover"
-                unoptimized={true}
-                onError={(e) => {
-                  e.target.style.display = "none";
-                }}
-              />
+{member.photo ? (
+  <Image
+    src={member.photo}
+    alt={`${member.firstName || member.username}'s profile`}
+    width={50}
+    height={50}
+    className="w-full h-full object-cover"
+    unoptimized={true}
+    onError={(e) => {
+      e.target.style.display = "none";
+    }}
+  />
+) : null}
               {!member.photo && (
                 <FaUserCircle className="absolute inset-0 text-3xl text-gray-500 m-auto" />
               )}

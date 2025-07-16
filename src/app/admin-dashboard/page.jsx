@@ -69,6 +69,7 @@ const AdminDashboard = () => {
       });
 
       setEmployees(Array.from(employeeMap.values()));
+      console.log("Employees with file access:", employees);
       setLoading(false);
     } catch (err) {
       setError(err.response?.data?.message || err.message);
@@ -89,6 +90,7 @@ const AdminDashboard = () => {
           },
         }
       );
+      console.log(response);
       setLinks(response.data.links);
       setLinksLoading(false);
     } catch (err) {
@@ -224,6 +226,7 @@ const AdminDashboard = () => {
         }
       );
 
+      console.log(response);
       if (response.data.msg === "Global link added successfully") {
         await fetchLinks();
         closeModals();
@@ -281,65 +284,66 @@ const AdminDashboard = () => {
       <div className="p-4">
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Employees Table */}
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Instructors Folder Access
-            </h2>
+<div>
+  <h2 className="text-2xl font-bold text-gray-900 mb-4">
+    Instructors Folder Access
+  </h2>
 
-            {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-              </div>
-            ) : error ? (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                {error}
-              </div>
-            ) : employees.length === 0 ? (
-              <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-                No employees data available
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
-                          UserName
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
-                          Email
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
-                          Accessible Folders
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {employees.map((employee) => (
-                        <motion.tr
-                          key={employee.id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="hover:bg-gray-50"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {employee.name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {employee.email}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {employee.folders?.join(", ") || "No access"}
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
+  {loading ? (
+    <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+  ) : error ? (
+    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+      {error}
+    </div>
+  ) : employees.length === 0 ? (
+    <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+      No instructors found with folder access.
+    </div>
+  ) : (
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
+                UserName
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
+                Email
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
+                Accessible Folders
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {employees.map((employee) => (
+              <motion.tr
+                key={employee.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="hover:bg-gray-50"
+              >
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {employee.name}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {employee.email}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-500">
+                  {employee.folders?.join(", ") || "No access"}
+                </td>
+              </motion.tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )}
+</div>
+
 
           {/* Links Table */}
           <div>
@@ -350,7 +354,7 @@ const AdminDashboard = () => {
                 className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
               >
                 <FiPlus className="mr-2 h-4 w-4" />
-                Add New App
+                Add New Course
               </button>
             </div>
             <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -392,7 +396,7 @@ const AdminDashboard = () => {
                             {link.image?.secure_url ? (
                               <img
                                 src={link.image?.secure_url}
-                                alt={link.title}
+                                alt="Link Image"
                                 width={50}
                                 height={50}
                                 className="rounded-md"
