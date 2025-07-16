@@ -15,7 +15,7 @@ export default function RequestsPage() {
   const [isGiveAccessModalOpen, setIsGiveAccessModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [accessData, setAccessData] = useState({
-    fileId: "",
+    folderId: "",
     employeeId: "",
     reason: "",
   });
@@ -71,7 +71,7 @@ export default function RequestsPage() {
           },
         }
       );
-      
+      console.log("Fetched requests:", response.data);
       // Transform the data to flatten the structure
       const flattenedRequests = response.data.folders.flatMap(folder => {
         return folder.accessRequests.map(request => ({
@@ -206,7 +206,7 @@ export default function RequestsPage() {
 
   // Give access to employee
   const giveAccessToEmployee = async () => {
-    if (!accessData.fileId || !accessData.employeeId || !accessData.reason) {
+    if (!accessData.folderId || !accessData.employeeId || !accessData.reason) {
       Swal.fire("Error!", "Please fill in all fields.", "error");
       return;
     }
@@ -223,10 +223,12 @@ export default function RequestsPage() {
           },
         }
       );
+      console.log("Access granted:", response.data);
 
-      await fetchRequests();
       closeGiveAccessModal();
       Swal.fire("Success!", "Access has been granted.", "success");
+      await fetchRequests();
+
 
     } catch (error) {
       if (error.response.data.msg === "Invalid employeeId or folderId format") {
@@ -532,8 +534,8 @@ export default function RequestsPage() {
                       Folder
                     </label>
                     <select
-                      name="fileId"
-                      value={accessData.fileId}
+                      name="folderId"
+                      value={accessData.folderId}
                       onChange={handleAccessInputChange}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
